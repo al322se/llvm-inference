@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  vllm-service:
+    build:
+      context: ./vllm-service
+      dockerfile: Dockerfile
+    container_name: vllm-reranker
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - VLLM_USE_CPU=1
+      # Increase memory limits for CPU inference
+      - OMP_NUM_THREADS=4
+      - MKL_NUM_THREADS=4
+    volumes:
+      - ./models:/root/.cache/huggingface
+    # Remove GPU resource requirements
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s  # Increased startup time for CPU inference
+    restart: unless-stopped
+    # Add memory limits for CPU inference
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+
+  web-app:
+    build:
+      context: ./web-app/InferenceLlvm/
+      dockerfile: Dockerfile
+    container_name: job-reranker-web
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - VllmService__BaseUrl=http://vllm-service:8000
+    depends_on:
+      vllm-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/reranker/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  models:
+    driver: local
+
+networks:
+  default:
+    driver: bridge

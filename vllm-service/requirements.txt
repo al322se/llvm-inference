@@ -1,0 +1,14 @@
+
+# Core API dependencies
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.10.0
+
+# ML/AI dependencies
+transformers==4.51.0
+torch==2.0.0
+vllm==0.6.0
+
+# CPU-optimized packages
+intel-extension-for-pytorch
+mkl

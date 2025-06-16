@@ -1,0 +1,145 @@
+@model RerankViewModel
+@{
+    ViewData["Title"] = "Job Reranker";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">
+                        <i class="fas fa-search"></i>
+                        Job Description Reranker
+                    </h2>
+                    <p class="text-muted mb-0">Analyze how well a job description matches a vacancy title</p>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Index" method="post">
+                        <div class="mb-3">
+                            <label asp-for="VacancyTitle" class="form-label"></label>
+                            <input asp-for="VacancyTitle" class="form-control" placeholder="e.g., C# Backend Developer" />
+                            <span asp-validation-for="VacancyTitle" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="JobDescription" class="form-label"></label>
+                            <textarea asp-for="JobDescription" class="form-control" rows="8" 
+                                placeholder="Paste the job description or candidate profile here..."></textarea>
+                            <span asp-validation-for="JobDescription" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Instruction" class="form-label"></label>
+                            <textarea asp-for="Instruction" class="form-control" rows="2"></textarea>
+                            <small class="form-text text-muted">Leave default for standard job matching</small>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-calculator"></i>
+                                Analyze Match
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.HasResult && Model.Result != null)
+            {
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3 class="mb-0">
+                            <i class="fas fa-chart-bar"></i>
+                            Analysis Results
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="text-center p-3 border rounded">
+                                    <h4 class="@Model.Result.MatchClass">
+                                        @Model.Result.MatchStatus
+                                    </h4>
+                                    <div class="progress mt-3" style="height: 20px;">
+                                        <div class="progress-bar @(Model.Result.IsMatch ? "bg-success" : "bg-danger")" 
+                                             role="progressbar" 
+                                             style="width: @(Model.Result.Probability * 100)%"
+                                             aria-valuenow="@(Model.Result.Probability * 100)" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            @Model.Result.ProbabilityPercentage%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Match Probability:</strong></td>
+                                        <td class="@Model.Result.MatchClass">@Model.Result.ProbabilityPercentage%</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Confidence Score:</strong></td>
+                                        <td>@Model.Result.Score.ToString("F4")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Raw Probability:</strong></td>
+                                        <td>@Model.Result.Probability.ToString("F6")</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h5>Interpretation:</h5>
+                            <p class="text-muted">
+                                @if (Model.Result.IsMatch)
+                                {
+                                    <span>The job description appears to be a <strong>good match</strong> for the vacancy title. 
+                                    The candidate's profile aligns well with the requirements.</span>
+                                }
+                                else
+                                {
+                                    <span>The job description appears to be a <strong>poor match</strong> for the vacancy title. 
+                                    The candidate's profile may not align well with the requirements.</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 text-center">
+    <button class="btn btn-outline-info" onclick="checkHealth()">
+        <i class="fas fa-heartbeat"></i>
+        Check Service Health
+    </button>
+</div>
+
+<div id="healthResult" class="mt-3"></div>
+
+@section Scripts {
+    <script>
+        async function checkHealth() {
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.innerHTML = '<div class="alert alert-info">Checking service health...</div>';
+            
+            try {
+                const response = await fetch('/Home/Health');
+                const health = await response.json();
+                
+                if (health.Status === 'healthy' && health.ModelLoaded) {
+                    resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Service is healthy and model is loaded</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Service status: ' + health.Status + '</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Failed to check service health: ' + error.message + '</div>';
+            }
+        }
+    </script>
+}
