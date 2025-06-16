@@ -6,9 +6,10 @@ pydantic==2.10.0
 
 # ML/AI dependencies
 transformers==4.51.0
-torch==2.0.0
-vllm==0.6.0
+# Use the CPU build of PyTorch
+torch==2.1.2
+# Use the latest vLLM compatible with the codebase
+vllm==0.4.0
 
-# CPU-optimized packages
-intel-extension-for-pytorch
-mkl
+# Additional CPU optimisations
+intel-extension-for-pytorch==2.1.30
