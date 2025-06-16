@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import torch
@@ -53,14 +54,22 @@ async def startup_event():
     global model, tokenizer, sampling_params, token_false_id, token_true_id
     
     logger.info("Loading model and tokenizer for CPU inference...")
+
+    # Read model directory from environment or use default
+    model_dir = os.getenv("MODEL_DIR", "/models/Qwen3-Reranker-0.6B")
+    logger.info(f"Using model directory: {model_dir}")
     
     try:
-        # Initialize tokenizer
-        tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-Reranker-0.6B")
+        # Initialize tokenizer from local path
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_dir,
+            trust_remote_code=True,
+            local_files_only=True
+        )
         
         # Initialize vLLM model for CPU inference
         model = LLM(
-            model="Qwen/Qwen3-Reranker-0.6B",
+            model=model_dir,
             tensor_parallel_size=1,
             # Remove GPU-specific settings
             # gpu_memory_utilization=0.8,

@@ -11,11 +11,12 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - VLLM_USE_CPU=1
+      - MODEL_DIR=/models/Qwen3-Reranker-0.6B
       # Increase memory limits for CPU inference
       - OMP_NUM_THREADS=4
       - MKL_NUM_THREADS=4
     volumes:
-      - ./models:/root/.cache/huggingface
+      - ./models:/models
     # Remove GPU resource requirements
     # deploy:
     #   resources:
